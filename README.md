@@ -321,7 +321,7 @@ print(top_concepts)
 
 **Description**: Structured summaries for all papers were generated internally from the full text of papers using GPT-4o, GPT-4o-mini, o1-mini, and DeepSeek-v3. These summaries include fields for title & authors, background, motivation, methodology, main results, and other structured information.
 
-**For researchers needing summaries**: If you need access to the structured summaries for your research, please contact ting.74@osu.edu with a brief description of your use case. See our paper for the prompts and methodology used.
+**For researchers needing summaries**: If you need access to the structured summaries for your research, please contact ting.74@osu.edu with a brief description of your use case. See our paper for the methodology used.
 
 **Note**: The `abstracts_all.jsonl.gz` file provides original arXiv abstracts with 100% coverage, which can serve as a starting point for summarization tasks, though our summaries were generated from full paper text for more detailed content extraction.
 
