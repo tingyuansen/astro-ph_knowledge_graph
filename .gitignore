@@ -1,0 +1,7 @@
+# Summaries excluded for licensing concerns
+papers_summaries.jsonl.gz
+
+# macOS system files
+.DS_Store
+**/.DS_Store
+
