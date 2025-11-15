@@ -8,6 +8,7 @@ This directory contains scripts for:
 - **Abstract download**: Downloading abstracts from arXiv API
 - **Citation extraction**: Extracting citation data from NASA ADS
 - **Keyword extraction**: Extracting and curating ADS keywords
+- **Paper processing pipeline**: Summarizing papers, organizing summaries, and extracting concepts
 
 All scripts support automatic checkpointing and resume capability.
 
@@ -87,6 +88,123 @@ python curate_ads_keywords.py
 **Output**: `../ads_keywords/ads_keywords_curated.csv`
 
 **Results**: 1,269,903 curated associations, 6,909 unique keywords, 73% coverage (298,657 papers)
+
+### Paper Processing Pipeline
+
+These three scripts form the core pipeline for processing papers from markdown to structured concept extraction:
+
+#### 1. Summarizer
+
+**`summarizer.py`** - Summarizes papers from markdown files using Azure OpenAI.
+
+**Purpose**: Takes full paper markdown (from OCR tools like Nougat or Mathpix) and generates condensed summaries that preserve key scientific content, motivations, methods, and results.
+
+**Key Features**:
+- Splits papers into sections using LaTeX markers (`\section`, `\subsection`)
+- Preserves LaTeX formulas and technical content
+- Uses proportional compression (allocates summary space based on section length)
+- Parallel processing with configurable workers
+- Automatic retry logic with exponential backoff
+
+**Requirements**:
+- Azure OpenAI API credentials (endpoint, key, deployment name)
+- Python packages: `openai`, `python-dotenv`
+- Environment variables in `~/.env`:
+  ```
+  GPT_Cloud_Bank=your_azure_api_key
+  ENDPOINT_URL=your_azure_endpoint
+  DEPLOYMENT_NAME=your_deployment_name
+  ```
+
+**Input**: Markdown files with LaTeX-style section markers
+
+**Output**: Compressed summary files (`*_summary.md`) preserving key scientific content
+
+**Configuration**: Requires Azure OpenAI setup with appropriate models (GPT-4o or similar)
+
+#### 2. Organizer
+
+**`organizer.py`** - Reorganizes summaries into structured JSON format.
+
+**Purpose**: Takes the compressed summaries and restructures them into a standardized JSON format with specific fields for background, motivation, methodology, results, interpretation, and implication.
+
+**Key Features**:
+- Converts narrative summaries into structured JSON with 7 key fields
+- Ensures third-person perspective and removes section references
+- Validates JSON output and handles escape characters properly
+- Parallel processing with retry logic
+- Creates logical flow between sections
+
+**Requirements**:
+- Azure OpenAI API credentials
+- Python packages: openai, json, re
+
+**Input**: Summary markdown files (`*_summary.md`)
+
+**Output**: Structured JSON files (`*_organized.json`) with fields:
+  - `title_and_author`
+  - `background`
+  - `motivation`
+  - `methodology`
+  - `results`
+  - `interpretation`
+  - `implication`
+
+**Configuration**: Requires Azure OpenAI setup
+
+#### 3. Extractor
+
+**`extractor.py`** - Extracts key concepts and classifications from organized summaries.
+
+**Purpose**: Analyzes the structured paper summaries to identify approximately 10 key concepts per paper, with technical descriptions and domain classifications.
+
+**Key Features**:
+- Extracts ~10 concepts per paper covering both scientific and technical content
+- Assigns concepts to 8 hierarchical domains:
+  - Cosmology & Nongalactic Physics
+  - Galaxy Physics
+  - High Energy Astrophysics
+  - Solar & Stellar Physics
+  - Earth & Planetary Science
+  - Statistics & AI
+  - Numerical Simulation
+  - Instrumental Design
+- Generates ~100-word technical descriptions for each concept
+- Validates JSON structure and handles parsing errors
+- Parallel processing with retry logic
+
+**Requirements**:
+- Azure OpenAI API credentials
+- Python packages: openai, json
+
+**Input**: Organized JSON files (`*_organized.json`)
+
+**Output**: Concept JSON files (`*_concepts.json`) with arrays of:
+```json
+[
+  {
+    "concept": "Concept Name",
+    "class": "Domain Classification",
+    "description": "Technical description (~100 words)"
+  }
+]
+```
+
+**Configuration**: Requires Azure OpenAI setup
+
+#### Pipeline Flow
+
+The complete pipeline operates in sequence:
+
+1. **Paper → Markdown**: Use OCR tools (Nougat, Mathpix) to convert PDFs to markdown
+2. **Markdown → Summary**: Run `summarizer.py` to compress papers into key content
+3. **Summary → Organized JSON**: Run `organizer.py` to structure summaries
+4. **Organized JSON → Concepts**: Run `extractor.py` to extract key concepts
+5. **Concepts → Clustering**: Apply clustering to merge similar concepts into 9,999 unique classes
+
+**Note**: These scripts require Azure OpenAI API access and are provided for reproducibility. The dataset already includes the final outputs (organized summaries and extracted concepts).
+
+**Security Note**: The scripts handle API credentials securely. API keys are loaded from environment variables and are never logged or printed. Exception messages from the OpenAI library do not expose API keys.
 
 ## Getting ADS API Key
 
